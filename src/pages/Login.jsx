@@ -10,19 +10,18 @@ export default function Login() {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  // On mount: check if user is already logged in
+  // Safely load user from localStorage on mount
   useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem('user');
-      if (savedUser) {
-        const parsedUser = JSON.parse(savedUser);
-        if (parsedUser && typeof parsedUser === 'object') {
-          setUser(parsedUser); // user already logged in
-        }
+    const saved = localStorage.getItem('user');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setUser(parsed);
+        console.log('Loaded user from localStorage:', parsed);
+      } catch (e) {
+        console.warn('Invalid user in localStorage, clearing it.');
+        localStorage.removeItem('user');
       }
-    } catch (err) {
-      console.error('Failed to parse user from localStorage', err);
-      localStorage.removeItem('user');
     }
   }, []);
 
@@ -32,16 +31,17 @@ export default function Login() {
     setError('');
     try {
       const res = await axios.post('https://shopmate-backend-81uv.onrender.com/api/login', { email, password });
-      // Backend should return: { token, user: { name, email } }
+      // If your backend does NOT send user info, use email as fallback
+      const loggedInUser = res.data.user || { email }; // <--- fallback
       localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
-      setUser(res.data.user);
+      localStorage.setItem('user', JSON.stringify(loggedInUser));
+      setUser(loggedInUser);
       setMessage('Login successful!');
-      setEmail('');
-      setPassword('');
-      // Optional redirect after login:
+      console.log('User logged in:', loggedInUser);
+      // optional: navigate away after login
       setTimeout(() => navigate('/'), 1500);
     } catch (err) {
+      console.error('Login error:', err);
       setError(err.response?.data?.message || 'Login failed. Please try again.');
     }
   };
@@ -52,8 +52,7 @@ export default function Login() {
     setUser(null);
     setMessage('You have logged out.');
     setError('');
-    setEmail('');
-    setPassword('');
+    console.log('User logged out.');
   };
 
   return (
@@ -85,7 +84,7 @@ export default function Login() {
                 type="email"
                 placeholder="Email Address"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 className="border border-gray-300 p-3 rounded w-full focus:outline-none focus:ring-2 focus:ring-green-400"
                 required
               />
@@ -93,7 +92,7 @@ export default function Login() {
                 type="password"
                 placeholder="Password"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 className="border border-gray-300 p-3 rounded w-full focus:outline-none focus:ring-2 focus:ring-green-400"
                 required
               />
