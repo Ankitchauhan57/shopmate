@@ -31,7 +31,7 @@ export default function Login() {
     setMessage('');
     setError('');
     try {
-      const res = await axios.post('https://shopmate-backend-81uv.onrender.com/login', { email, password });
+      const res = await axios.post('https://shopmate-backend-81uv.onrender.com/api/login', { email, password });
       // Backend should return: { token, user: { name, email } }
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
